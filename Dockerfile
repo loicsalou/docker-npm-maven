@@ -1,84 +1,18 @@
 # using latest node alpine image https://hub.docker.com/_/node/
 
 
-FROM node:10-alpine
-LABEL maintainer="clement.schockaert@outlook.com"
+FROM node:12-alpine
+LABEL maintainer="dev.salou@gmail.com"
 
-## install docker
-
-#CMD [ "node" ]
-
-## START install docker based on (https://github.com/docker-library/docker/)
-RUN apk add --no-cache \
-		ca-certificates
-
-# set up nsswitch.conf for Go's "netgo" implementation (which Docker explicitly uses)
-# - https://github.com/docker/docker-ce/blob/v17.09.0-ce/components/engine/hack/make.sh#L149
-# - https://github.com/golang/go/blob/go1.9.1/src/net/conf.go#L194-L275
-# - docker run --rm debian:stretch grep '^hosts:' /etc/nsswitch.conf
-RUN [ ! -e /etc/nsswitch.conf ] && echo 'hosts: files dns' > /etc/nsswitch.conf
-
-ENV DOCKER_CHANNEL stable
-ENV DOCKER_VERSION 18.06.0-ce
-# TODO ENV DOCKER_SHA256
-# https://github.com/docker/docker-ce/blob/5b073ee2cf564edee5adca05eee574142f7627bb/components/packaging/static/hash_files !!
-# (no SHA file artifacts on download.docker.com yet as of 2017-06-07 though)
-
-RUN set -ex; \
-# why we use "curl" instead of "wget":
-# + wget -O docker.tgz https://download.docker.com/linux/static/stable/x86_64/docker-17.03.1-ce.tgz
-# Connecting to download.docker.com (54.230.87.253:443)
-# wget: error getting response: Connection reset by peer
-	apk add --no-cache --virtual .fetch-deps \
-		curl \
-		tar \
-	; \
-	\
-# this "case" statement is generated via "update.sh"
-	apkArch="$(apk --print-arch)"; \
-	case "$apkArch" in \
-		x86_64) dockerArch='x86_64' ;; \
-		armhf) dockerArch='armel' ;; \
-		aarch64) dockerArch='aarch64' ;; \
-		ppc64le) dockerArch='ppc64le' ;; \
-		s390x) dockerArch='s390x' ;; \
-		*) echo >&2 "error: unsupported architecture ($apkArch)"; exit 1 ;;\
-	esac; \
-	\
-	if ! curl -fL -o docker.tgz "https://download.docker.com/linux/static/${DOCKER_CHANNEL}/${dockerArch}/docker-${DOCKER_VERSION}.tgz"; then \
-		echo >&2 "error: failed to download 'docker-${DOCKER_VERSION}' from '${DOCKER_CHANNEL}' for '${dockerArch}'"; \
-		exit 1; \
-	fi; \
-	\
-	tar --extract \
-		--file docker.tgz \
-		--strip-components 1 \
-		--directory /usr/local/bin/ \
-	; \
-	rm docker.tgz; \
-	\
-	apk del .fetch-deps; \
-	\
-	dockerd -v; \
-	docker -v
-
-#COPY modprobe.sh /usr/local/bin/modprobe
-#COPY docker-entrypoint.sh /usr/local/bin/
-
-#ENTRYPOINT ["docker-entrypoint.sh"]
-#CMD ["sh"]
-
-## END install docker
-
+## ===============================================
 ## START install git
-
 RUN apk update && apk upgrade && \
     apk add --no-cache bash git openssh
 
 ## END install git
 
+## ===============================================
 ## START locale customization
-
 #RUN locale-gen en_US.UTF-8
 ENV LANG=fr_FR.UTF-8 \
     LANGUAGE=fr_FR.UTF-8 \
@@ -91,13 +25,8 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 ## END locale customization
 
+## ===============================================
 ## START of https://hub.docker.com/_/openjdk/ (openjdk from alpine : https://github.com/docker-library/openjdk/blob/master/8/jdk/alpine/Dockerfile)
-#
-# NOTE: THIS DOCKERFILE IS GENERATED VIA "update.sh"
-#
-# PLEASE DO NOT EDIT IT DIRECTLY.
-#
-
 #FROM alpine:3.8
 
 # A few reasons for installing distribution-provided OpenJDK:
@@ -126,7 +55,7 @@ ENV JAVA_HOME /usr/lib/jvm/java-1.8-openjdk
 ENV PATH $PATH:/usr/lib/jvm/java-1.8-openjdk/jre/bin:/usr/lib/jvm/java-1.8-openjdk/bin
 
 ENV JAVA_VERSION 8u171
-ENV JAVA_ALPINE_VERSION 8.171.11-r0
+ENV JAVA_ALPINE_VERSION 8.232.09-r0
 
 RUN set -x \
 	&& apk add --no-cache \
@@ -138,6 +67,7 @@ RUN set -x \
 #
 #   https://github.com/docker-library/openjdk/issues
 
+## ===============================================
 ## START add python
 
 RUN apk add --update \
@@ -148,6 +78,7 @@ RUN apk add --update \
 
 ## END add python
 
+## ===============================================
 ## START add JQ and danger
 
 RUN apk update \
@@ -170,6 +101,7 @@ RUN gem install danger && \
 
 ## END add JQ and danger
 
+## ===============================================
 ## START of maven from alpine (https://github.com/carlossg/docker-maven/blob/master/jdk-8-alpine/Dockerfile)
 
 #FROM openjdk:8-jdk-alpine

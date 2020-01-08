@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-docker build -t cschockaert/docker-npm-maven:latest -t cschockaert/docker-npm-maven:1.3.0 .
+docker build --build-arg http_proxy=http://proxy-bvcol.admin.ch:8080 --build-arg https_proxy=http://proxy-bvcol.admin.ch:8080 -t loicsalou/docker-npm-maven:1.3.0 .
